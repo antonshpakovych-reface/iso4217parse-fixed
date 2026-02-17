@@ -1,38 +1,37 @@
-[tool.poetry]
-
-name = "iso4217parse"
-version = "0.6.2"
-description = "Parse currencies (symbols and codes) from and to ISO4217."
-authors = ["Tammo Ippen <tammo.ippen@posteo.de>"]
+[project]
+name = "iso4217parse-fixed"
+version = "0.1.0"
+description = "A fork of iso4217-parse with support only active currencies"
+authors = [
+    { name = "Anton Shpakovych", email = "anton.shpakovych@reface.ai" }
+]
 license = "MIT"
-
+license-files = ["LICEN[CS]E*"]
+keywords = ["iso4217", "currency", "parse", "symbol"]
 readme = "README.md"
+requires-python = ">=3.9"
 
-repository = "https://github.com/tammoippen/iso4217parse"
-homepage = "https://github.com/tammoippen/iso4217parse"
+[project.urls]
+homepage = "https://github.com/antonshpakovych-reface/iso4217parse-fixed"
+repository = "https://github.com/antonshpakovych-reface/iso4217parse-fixed"
 
-include = ["tests/*.py", "iso4217parse/*.json", "iso4217parse/*.py", "setup.cfg"]
 
-keywords=['iso4217', 'currency', 'parse', 'symbol']
-
-classifiers=[
+[tool.poetry]
+include = ["iso4217parse/*.json", "iso4217parse/*.py", "setup.cfg"]
+classifiers = [
     # Trove classifiers
     # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
-    'License :: OSI Approved :: MIT License',
-    'Programming Language :: Python',
-    'Programming Language :: Python :: 3.9',
-    'Programming Language :: Python :: 3.10',
-    'Programming Language :: Python :: 3.11',
-    'Programming Language :: Python :: 3.12',
-    'Programming Language :: Python :: Implementation :: CPython',
-    'Programming Language :: Python :: Implementation :: PyPy'
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy"
 ]
 
-[tool.poetry.dependencies]
-python = "^3.9"
-
 [tool.poetry.group.dev.dependencies]
-
 coveralls = "*"
 iso3166 = "*"
 mypy = "*"
@@ -41,5 +40,5 @@ pytest-cov = "*"
 ruff = "*"
 
 [build-system]
-requires = ["poetry>=0.12"]
+requires = ["poetry-core>=2.2.0"]
 build-backend = "poetry.masonry.api"
