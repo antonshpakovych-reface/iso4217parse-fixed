@@ -17,6 +17,7 @@ repository = "https://github.com/antonshpakovych-reface/iso4217parse-fixed"
 
 
 [tool.poetry]
+packages = [{include = "iso4217parse"}]
 include = ["iso4217parse/*.json", "iso4217parse/*.py", "setup.cfg"]
 classifiers = [
     # Trove classifiers
@@ -41,4 +42,4 @@ ruff = "*"
 
 [build-system]
 requires = ["poetry-core>=2.2.0"]
-build-backend = "poetry.masonry.api"
+build-backend = "poetry.core.masonry.api"
