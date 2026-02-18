@@ -1,175 +1,83 @@
-# The MIT License
-
-# Copyright (c) 2017 - 2024 Tammo Ippen, tammo.ippen@posteo.de
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-
-# This is a helper script to generate `data.json`!
-# use like `python3 gen_data.py <output-path> [<tmp-output = 0>]`
-
-# execute with python 3.4 or later (pathlib)
-# pip install requests lxml bs4 iso3166 dateparser
-
 import json
-from pathlib import Path
-import re
 import sys
+from pathlib import Path
 
-from bs4 import BeautifulSoup
-import iso3166
 import requests
+import iso4217
+import csv
+import io
 
-# symbols see subsequent pages and http://www.xe.com/currency/
-res = requests.get(
-    "https://en.wikipedia.org/wiki/ISO_4217",
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                      "AppleWebKit/537.36 (KHTML, like Gecko) "
-                      "Chrome/117.0 Safari/537.36"
-    }
-)
-soup = BeautifulSoup(res.content, "lxml")
 
-tables = soup.findAll("table")
-
-if len(sys.argv) < 2:
-    print("Use like: python3 {} <output-path> [<tmp-output = 0>]".format(sys.argv[0]))
-    sys.exit(42)
-
-p = Path(sys.argv[1]).absolute()
-if not p.is_dir():
-    print("Use like: python3 {} <output-path> [<tmp-output = 0>]".format(sys.argv[0]))
-    sys.exit(42)
-
-tmp_out = False
-if len(sys.argv) == 3:
-    tmp_out = bool(int(sys.argv[2]))
-
-# some names do not resolve with iso3166 package; or are special
-alt_iso3166 = {
-    "Bolivia": "BO",
-    "Democratic Republic of the Congo": "CD",
-    "Somaliland": "SO",
-    "Transnistria": "MD",
-    "Venezuela": "VE",
-    "Caribbean Netherlands": "BQ",
-    "British Virgin Islands": "VG",
-    "Federated States of Micronesia": "FM",
-    "U.S. Virgin Islands": "VI",
-    "Republic of the Congo": "CG",
-    "Sint Maarten": "SX",
-    "Cocos   Islands": "CC",
-    "the Isle of Man": "IM",
-    "and Guernsey": "GG",
-    "Pitcairn Islands": "PN",
-    "French territories of the Pacific Ocean: French Polynesia": "PF",
-    "Kosovo": "XK",
+GEONAMES_URL = "https://download.geonames.org/export/dump/countryInfo.txt"
+NEW_CURRENCY_BY_DEPRECATED = {
+    "BGN": "EUR",
+    "ANG": "XCG",
 }
-
-additional_countries = {
-    "EUR": [
-        "Åland Islands",
-        "French Guiana",
-        "French Southern Territories",
-        "Holy See",
-        "Saint Martin (French part)",
-    ],
-    "SEK": ["Åland Islands"],
-    "EGP": [
-        "Palestine, State of"
-    ],  # see https://en.wikipedia.org/wiki/State_of_Palestine
-    "ILS": ["Palestine, State of"],
-    "JOD": ["Palestine, State of"],
-    "FKP": ["South Georgia and the South Sandwich Islands"],
-    # 'Sahrawi peseta': ['Western Sahara'],
-    "MAD": ["Western Sahara"],
-    "DZD": ["Western Sahara"],
-}
-
-# get active table
-active = []
-for row in tables[1].findAll("tr"):  # noqa
-    tds = row.findAll("td")
-    if tds:
-        try:
-            minor = int(re.sub(r"\[[0-9]+\]", r"", tds[2].text.replace("*", "")))
-        except:  # noqa: E722
-            minor = 0
-        d = dict(
-            code=tds[0].text,
-            code_num=int(tds[1].text),
-            minor=minor,
-            name=re.sub(r"\[[0-9]+\]", r"", tds[3].text).strip(),
-            countries=tds[4].text.replace("\xa0", ""),
-        )
-
-        d["countries"] = re.sub(r"\([^)]+\)", r" ", d["countries"])
-        d["countries"] = re.sub(r"\[[0-9]+\]", r" ", d["countries"]).strip()
-        d["countries"] = [c.strip() for c in d["countries"].split(",") if c]
-        if d["code"] in additional_countries:
-            d["countries"] += additional_countries[d["code"]]
-        ccodes = []
-        for c in d["countries"]:
-            if c in alt_iso3166:
-                ccodes += [alt_iso3166[c]]
-            m = re.match(r".*\(([A-Z]{2})\).*", c)
-            if m:
-                ccodes += [m.group(1)]
-            else:
-                code = iso3166.countries.get(c, None)
-                if code:
-                    ccodes += [code.alpha2]
-                else:
-                    code = iso3166.countries.get(d["code_num"], None)
-                    if code:
-                        ccodes += [code.alpha2]
-        if len(d["countries"]) != len(set(ccodes)) and d["code"] not in {
-            "SHP",
-            "XDR",
-            "XSU",
-            "XUA",
-        }:
-            print(d["countries"], set(ccodes))
-        d["country_codes"] = sorted(set(ccodes))
-        active += [d]
-
-if tmp_out:
-    with open(f"{p}/active.json", "w") as f:
-        json.dump(active, f, indent=4, sort_keys=True, ensure_ascii=False)
+COUNTRY_WITHOUT_CURRENCY = ["AQ"]
 
 
+def parse_geonames(symbols_by_currency_alpha3):
+    response = requests.get(GEONAMES_URL)
+    response.raise_for_status()
 
-with open("{}/symbols.json".format(p), "r") as f:
-    symbols = json.load(f)
+    file = io.StringIO(response.text)
 
-data = dict()
-for d in active:
-    data[d["code"]] = dict(
-        name=d["name"],
-        alpha3=d["code"],
-        code_num=d["code_num"],
-        countries=d["country_codes"],
-        minor=d["minor"],
-        symbols=symbols.get(d["code"], []),
-    )
+    header_names = []
+    data_lines = []
+    for line in file:
+        if line.startswith("#"):
+            if line.startswith("#ISO"):
+                header_names = line.lstrip("#").strip().split("\t")
+        else:
+            data_lines.append(line)
+
+    reader = csv.DictReader(data_lines, fieldnames=header_names, delimiter="\t")
+
+    currency_map = {}
+    for row in reader:
+        if row["ISO"] in COUNTRY_WITHOUT_CURRENCY:
+            continue
+
+        currency_alpha3 = row["CurrencyCode"]
+
+        if currency_alpha3 in NEW_CURRENCY_BY_DEPRECATED:
+            currency_alpha3 = NEW_CURRENCY_BY_DEPRECATED[currency_alpha3]
+
+        parsed_iso_currency = iso4217.Currency(currency_alpha3)
+
+        if currency_alpha3 in currency_map:
+            currency_map[currency_alpha3]["countries"].append(row["ISO"])
+        else:
+            currency_info = {
+                "alpha3": currency_alpha3,
+                "code_num": parsed_iso_currency.number,
+                "countries": [row["ISO"]] or 0,
+                "minor": parsed_iso_currency.exponent or 0,
+                "name": parsed_iso_currency.currency_name,
+                "symbols": symbols_by_currency_alpha3.get(currency_alpha3, []),
+            }
+            currency_map[currency_alpha3] = currency_info
+
+    return currency_map
 
 
-with open("{}/data.json".format(p), "w") as f:
-    json.dump(data, f, sort_keys=True, ensure_ascii=False, indent=4)
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print(f"Usage: python {sys.argv[0]} <output_dir>")
+        sys.exit(1)
+
+    output_path = Path(sys.argv[1])
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    symbols_path = output_path / "symbols.json"
+    symbols_data = {}
+    if symbols_path.exists():
+        with open(symbols_path, "r", encoding="utf-8") as f:
+            symbols_data = json.load(f)
+
+    data = parse_geonames(symbols_data)
+
+    with open(output_path / "data.json", "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False, sort_keys=True)
+
+    print(f"Done! Processed {len(data)} currencies.")

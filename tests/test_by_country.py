@@ -25,7 +25,7 @@ def test_examples():
         iso4217parse.Currency(
             alpha3="HKD",
             code_num=344,
-            name="Hong Kong dollar",
+            name="Hong Kong Dollar",
             symbols=[
                 "HK$",
                 "HK＄",
@@ -41,14 +41,6 @@ def test_examples():
             ],
             minor=2,
             countries=["HK"],
-        ),
-        iso4217parse.Currency(
-            alpha3="CNH",
-            code_num=None,
-            name="Chinese yuan",
-            symbols=["CN¥", "￥", "CN￥", "¥", "RMB", "元"],
-            minor=2,
-            countries=["HK"],
-        ),
+        )
     ]
     assert exp == iso4217parse.by_country("HK")

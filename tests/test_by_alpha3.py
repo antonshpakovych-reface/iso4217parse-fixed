@@ -16,8 +16,20 @@ def test_examples():
     exp = iso4217parse.Currency(
         alpha3="CHF",
         code_num=756,
-        name="Swiss franc",
-        symbols=["SFr.", "fr", "Fr.", "F", "franc", "francs", "Franc", "Francs"],
+        name="Swiss Franc",
+        symbols=[
+            "SFr.",
+            "fr",
+            "Fr.",
+            "F",
+            "franc",
+            "francs",
+            "Franc",
+            "Francs",
+            "franc suisse",
+            "francs suisse",
+            "franc-suisse",
+        ],
         minor=2,
         countries=["CH", "LI"],
     )
