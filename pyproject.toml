@@ -33,12 +33,11 @@ classifiers = [
 ]
 
 [tool.poetry.group.dev.dependencies]
-coveralls = "*"
 iso3166 = "*"
 mypy = "*"
 pytest = "*"
-pytest-cov = "*"
 ruff = "*"
+iso4217 = "*"
 
 [build-system]
 requires = ["poetry-core>=2.2.0"]

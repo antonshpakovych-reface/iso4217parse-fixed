@@ -16,7 +16,7 @@ def test_examples():
     exp = iso4217parse.Currency(
         alpha3="AMD",
         code_num=51,
-        name="Armenian dram",
+        name="Armenian Dram",
         symbols=["֏", "դր", "dram"],
         minor=2,
         countries=["AM"],
